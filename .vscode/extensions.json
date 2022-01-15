@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "adobe.extendscript-debug",
+        "yutengjing.adobe-extension-devtools"
+    ]
+}

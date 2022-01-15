@@ -1,0 +1,32 @@
+{
+    "Immediately Invoked Function Expression": {
+        "scope": "javascript",
+        "prefix": "iife",
+        "body": [
+			"(function(){",
+			"    $2",
+			"})();"
+		],
+        "description": "create immediately invoked function expression"
+    },
+    "use strict": {
+        "scope": "javascript",
+        "prefix": "ust",
+        "body": [
+			"'use strict';"
+		],
+        "description": "use strict mode"
+    },
+    "$.writeln()": {
+        "scope": "javascript",
+        "prefix": "wl",
+        "body": "$.writeln($1);",
+        "description": "ExtendScript output to stdout"
+    },
+    "emitter.log": {
+        "scope": "javascript",
+        "prefix": "elg",
+        "body": "emitter.log($1);",
+        "description": "output to stdio and chromium console"
+    },
+}
