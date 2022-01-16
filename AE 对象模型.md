@@ -183,7 +183,7 @@ var LayerTypes = {
   Video: 'Video', // 视频图层
   ImageSequence: 'ImageSequence', // 序列帧图层
   NullObject: 'NullObject', // 空对象图层
-  // 下面这些图层工作中都没怎么用过
+  // 下面这些图层我都还没怎么用过
   PlaceholderStill: 'PlaceholderStill',
   PlaceholderVideo: 'PlaceholderVideo',
   PreCompose: 'PreCompose', // 预合成图层
@@ -197,7 +197,7 @@ var LayerTypes = {
 
 #### 图层继承关系
 
-![Layer inherit](https://s2.loli.net/2022/01/16/bFqPLuUzoWsD4v9.png)
+![Layer inherit](https://s2.loli.net/2022/01/16/nNpDXTZ4IqtdAoG.png)
 
 #### 解析图层类型
 
@@ -289,3 +289,21 @@ function resolveLayerType(layer) {
   return result;
 }
 ```
+
+下面细说各种图层。
+
+#### Layer
+
+Layer 是所有图层类型的基类，定义了很多基础属性：
+
+- [id](https://ae-scripting.docsforadobe.dev/layers/layer.html#layer-id)，这个属性是 AE 2022 新增的，类似于合成的 id，由于手头没有 AE2022， 就没有实际研究过。2022 的 AE MacOS 版本的貌似很多破解大佬因为 m1 的原因不破解了。
+
+- index，图层下标，实际的项目中这个才是我们用来标识一个图层的字段，通过合成 id + 图层 index 定位 project 中的图层，其实它和 AE 图层列表中的数字标号一一对应
+
+  ![AE layer index](https://s2.loli.net/2022/01/16/2a35HSyMmZ9OLec.png)
+
+#### Still Layer
+
+在有些资料里他们直接叫 ImageLayer，之所以叫 Still Layer，应该是因为 [FootageSource.isStill](https://ae-scripting.docsforadobe.dev/sources/footagesource.html?highlight=still#footagesource-isstill) 属性。当它为 true 时表示图层素材没有时间维度概念，例如：图片，纯色图层，时间为 0 的 placeholders。从这个角度来说，我认为 StillLayer 叫 ImageLayer 更合适。
+
+常见的 png, jpg, ai, psd 格式的素材都是构成 still layer
