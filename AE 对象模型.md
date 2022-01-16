@@ -16,7 +16,7 @@
 
 说明：
 
-上面背景颜色相同的节点表示都是彼此是有直接联系的，例如紫色的两个节点表示那个图层  `videoLayer1` 使用的视频素材就是 `item3-video2`。
+上面背景颜色相同的节点表示都是彼此是有直接联系的，例如紫色的两个节点表示那个图层 `videoLayer1` 使用的视频素材就是 `item3-video2`。
 
 ### app
 
@@ -37,37 +37,41 @@ app.project 返回的就是你当前打开的工程，**AE 不支持同时打开
 
 ### Items
 
-![AE project panel](https://s2.loli.net/2022/01/16/uyE1Zjg5fK2OpJn.png)
+![AE project panel](https://s2.loli.net/2022/01/16/gZV9EdXYBmPNnSh.png)
 
-其实 app.project 是和 AE 的 project 面板对应的，app.project.items 返回的就是 project 面板中的所有项，在 AE 术语中就是 Item。
+其实 app.project 是和 AE 的 project 面板对应的，`app.project.items` 返回的就是 project 面板中的所有项，基类都是 `Item` 。
 
 在 AE 的术语里有一个单词 `Footage`，表示素材的意思。project 面板中的每一项就是一个素材，这个素材可以是一个具体的素材例如图片，视频，序列帧，也可以是一个合成，还可以是一个文件夹（Folder Footage）。
 
-需要注意的是 items 不是一个树结构，而是树被拍平后的数组，上面中 app.project.numItems 是 15，13 个具体素材 + 2 文件夹。只不过你可以通过 folderItem.items 再访问子 item。
+需要注意的是 items 不是一个树结构，而是树被拍平后的数组，上面中 app.project.numItems 是 15，13 个具体素材 + 2 文件夹。只不过你可以通过 `folderItem.items` 再访问子 item。
 
-#### viewers
+### viewers
 
 viewers 指的是正中间那块区域，当我们双击合成，图层，或者 project 面板中的素材时都会打开一个 viewer。
 
 activeViewer：当前打开的合成，图层或者素材视图，通过 app.activeViewer 来访问，对应上图就是那个合成视图。
 
-#### compItem
+### 合成
 
-我们可以把 AE 的 project 理解为一个 monorepo 项目，那么一个合成就是 project 中的一个 package。合成之间也可以相互依赖，一个合成可以是另一个合成的一个图层。
+如果把 AE 的 project 理解为一个 monorepo 项目，那么一个合成就是 project 中的一个 package。合成之间也可以相互依赖，一个合成可以是另一个合成的一个图层。
 
-合成的唯一标识符是它的 id，合成的 id 是根据 project 创建的它的时间顺序从 0 开始递增的。新建一个 project，，再建两个合成，id 会分别是 0 和 1。这时候删除 id 为 0 的合成，新建一个合成，这个新合成 id 是 2，不会是某些人想的 0，并不会从头开始。 
+#### 合成 id
 
-一个 project 中所有合成都会显示在 project 面板中作为一个素材项，**预合成**本质也是一个合成。当需要访问一个合成时有两种方式，一种是通过 app.project.activeItem 访问当前激活项。什么叫激活项？激活项指的是 project 面板中当前唯一选中项，如果选中多项那就会返回 null。我们在做简单的 api 测试的时候经常会使用它：
+合成的构造器是 `CompItem`，唯一标识符是它的 id，合成的 id 是根据 project 创建的它的时间顺序从 0 开始递增的。新建一个 project，再建两个合成，id 会分别是 0 和 1。这时候删除 id 为 0 的合成，新建一个合成，这个新合成 id 是 2，不会是某些人想的 0，并不会从头开始。
+
+#### 获取合成
+
+project 中的所有合成都会显示在 project 面板中作为一个素材项，**预合成**本质也是一个合成。当需要访问一个合成时有两种方式。一种是通过 `app.project.activeItem` 访问当前激活项。什么叫激活项？激活项指的是 project 面板中当前唯一选中项，如果选中多项那就会返回 null。我们在做简单的 api 测试的时候经常会使用它：
 
 ```javascript
 (function () {
-    /** @type {CompItem} */
-    var comp = app.project.activeItem;
-    // 最安全的做法要判空和类型，也有可能是图片等其他 item
-    if (comp && comp instanceof CompItem) {
-        //  输出当前合成名
-        $.writeln(comp.name);
-    }
+  /** @type {CompItem} */
+  var comp = app.project.activeItem;
+  // 最安全的做法要判空和类型，也有可能是图片等其他 item
+  if (comp && comp instanceof CompItem) {
+    //  输出当前合成名
+    $.writeln(comp.name);
+  }
 })();
 ```
 
@@ -75,42 +79,213 @@ activeViewer：当前打开的合成，图层或者素材视图，通过 app.act
 
 ```javascript
 (function () {
-    /**
-     * 获取当前 project 中所有合成
-     * @returns {CompItem[]}
-     */
-    function getCompositions() {
-        var project = app.project;
-        var items = project.items;
-        var composites = [];
-        for (var i = 1, len = project.numItems, item; i <= len; i++) {
-            item = items[i];
-            if (item instanceof CompItem) {
-                composites.push(item);
-            }
-        }
-        return composites;
+  /**
+   * 获取当前 project 中所有合成
+   * @returns {CompItem[]}
+   */
+  function getCompositions() {
+    var project = app.project;
+    var items = project.items;
+    var composites = [];
+    for (var i = 1, len = project.numItems, item; i <= len; i++) {
+      item = items[i];
+      if (item instanceof CompItem) {
+        composites.push(item);
+      }
     }
+    return composites;
+  }
 
-    /**
-     * 获取 id 为传入 id 的合成
-     * @param {string} number
-     * @param {CompItem[]} compositions
-     * @returns {CompItem}
-     */
-    function findCompositionById(id, compositions) {
-        compositions = compositions === undefined ? getCompositions() : compositions;
-        for (var i = 0, comp; i < compositions.length; i++) {
-            comp = compositions[i];
-            if (comp.id === id) {
-                return comp;
-            }
-        }
+  /**
+   * 获取 id 为传入 id 的合成
+   * @param {string} number
+   * @param {CompItem[]} compositions
+   * @returns {CompItem}
+   */
+  function findCompositionById(id, compositions) {
+    compositions = compositions === undefined ? getCompositions() : compositions;
+    for (var i = 0, comp; i < compositions.length; i++) {
+      comp = compositions[i];
+      if (comp.id === id) {
+        return comp;
+      }
     }
+  }
 })();
 ```
 
+#### Collection
 
+需要注意的是在 AE 数据模型中，你遇到的所有的对象数组基本上都是 `Collection` 类型，**下标都是从 `1` 开始的**。例如 `app.project.items` 是 `ItemCollection 类型`， `app.project.renderQueue.items` 是 `RQItemCollection` 类型, `compItem.layers` 是 `LayerCollection` 类型。
 
+```javascript
+// 并不是真的数组
+var items = app.project.items;
+$.writeln(items instanceof Array); // false
+$.writeln(Object.prototype.toString.call(items) === '[object Array]'); // false
+// 使用 extendScript 的反射系统看属性
+$.writeln(items.reflect.properties); // length,__proto__
 
+// 是 ItemCollection 类型
+$.writeln(items.__proto__.constructor); // ItemCollection
+$.writeln(app.project.activeItem.layers.__proto__.constructor); // LayerCollection
+$.writeln(app.project.renderQueue.items.__proto__.constructor); // RQItemCollection
 
+// 也有例外，不过也不意外，因为 layer 没有 numSelectedProperties
+var layer = app.project.activeItem.layers[1];
+$.writeln(app.project.activeItem.layers[1].selectedProperties.__proto__.constructor); // Array
+```
+
+一般遍历 `Collection` 的方式是这样的：
+
+```javascript
+// 遍历所有合成
+for (var i = 1, len = project.numItems, item; i <= len; i++) {
+  item = items[i];
+  if (item instanceof CompItem) {
+    // do with compositions...
+  }
+}
+```
+
+如果要获取数量，可以有两种方式：
+
+```javascript
+// 方式一：使用对象数组所属对象的 numItems 属性
+var length = app.project.numItems;
+
+// 方式二：和普通数组一样，直接访问对象数组的 length
+var length = app.project.items.length;
+```
+
+更多 `Collection` 相关信息移步 [After Effects Scripting Guide#Collection object](https://ae-scripting.docsforadobe.dev/other/collection.html#collection)。
+
+### 图层
+
+图层应该算是 AE 视图层面的基本组成单位了。
+
+一个典型的工作流往往是：新建一个 project，新建一个合成，往 project 中拖进许多素材，使用拖进来的素材创建很多图层，或新建并使用纯色图层，或新建没有 sourceItem 的形状图层和文字图层，还可以选中几个图层创建一个预合成。然后再对各个图层添加动画帧，混合模式，样式，调整变换，添加特效。最终将合成添加到渲染队列，在 OutputModule 中选择合适的输出格式，输出路径，最终点击渲染队列面板的渲染按钮导出视频或其它你选择格式的文件。
+
+#### 图层分类
+
+参考 [bodymovin](https://github.com/bodymovin/bodymovin-extension) 中的分类，我们可以将 AE 中的图层分为以下类：
+
+```javascript
+/**
+ * Layer 类型
+ */
+var LayerTypes = {
+  Solid: 'Solid', // 纯色图层
+  Shape: 'Shape', // 形状图层
+  Still: 'Still', // 静态图层，大多数情况指的就是静态图
+  Text: 'Text', // 文字图层
+  Audio: 'Audio', // 音频图层
+  Video: 'Video', // 视频图层
+  ImageSequence: 'ImageSequence', // 序列帧图层
+  NullObject: 'NullObject', // 空对象图层
+  // 下面这些图层工作中都没怎么用过
+  PlaceholderStill: 'PlaceholderStill',
+  PlaceholderVideo: 'PlaceholderVideo',
+  PreCompose: 'PreCompose', // 预合成图层
+  Guide: 'Guide', // 参考线图层
+  Adjustment: 'Adjustment', // 调整图层
+  Camera: 'Camera', // 摄像机图层
+  Light: 'Light', // 灯光图层
+  Data: 'Data',
+};
+```
+
+#### 图层继承关系
+
+![Layer inherit](https://s2.loli.net/2022/01/16/bFqPLuUzoWsD4v9.png)
+
+#### 解析图层类型
+
+参考 bodymovin 中 [layerResolver.jsx](https://github.com/bodymovin/bodymovin-extension/blob/master/bundle/jsx/helpers/layerResolver.jsx) 对图层的解析，并做了一些优化后，图层类型解析算法：
+
+```javascript
+/**
+ * 解析 AVLayer 的具体类型，没有返回值
+ * @param {Layer} layer
+ * @returns {keyof LayerType}
+ */
+function resolveAVLayerType(layer) {
+  var source = layer.source;
+  if (source instanceof CompItem) {
+    return LayerTypes.PreCompose;
+  }
+
+  var mainSource = source.mainSource;
+  if (!layer.hasVideo) {
+    if (layer.hasAudio) {
+      return LayerTypes.Audio;
+    } else {
+      return LayerTypes.Data;
+    }
+  } else if (source.frameDuration < 1) {
+    if (mainSource instanceof PlaceholderSource) {
+      return LayerTypes.PlaceholderVideo;
+    } else if (mainSource.isStill) {
+      return LayerTypes.Still;
+    }
+    // ImageSequence Layer source name 是 xxx-[00000-000xx].xxx 或 xxx-{00000-000xx}.xxx 格式，
+    // eslint-disable-next-line no-useless-escape
+    else if (/[[{]\d+-\d+[}\]].\w+$/.test(source.name) || /_\d{5}.\w+?$/.test(source.file.name)) {
+      return LayerTypes.ImageSequence;
+    } else {
+      return LayerTypes.Video;
+    }
+  } else if (source.frameDuration === 1) {
+    if (mainSource instanceof PlaceholderSource) {
+      return LayerTypes.PlaceholderStill;
+    } else if (mainSource.color) {
+      return LayerTypes.Solid;
+    } else {
+      return LayerTypes.Still;
+    }
+  }
+}
+
+/**
+ * 解析 layer 类型
+ * @param {Layer} layer
+ * @returns {keyof LayerType}
+ */
+function resolveLayerType(layer) {
+  var LayerConstructors = [AVLayer, CameraLayer, LightLayer, ShapeLayer, TextLayer];
+  var result;
+
+  // 暂时不明为啥 bodymovin 要设计 guide 类型的 Layer
+  // if (curLayer.guideLayer) {
+  //   return layerTypes.guide;
+  // }
+
+  if (layer.adjustmentLayer) {
+    return LayerTypes.Adjustment;
+  }
+
+  if (layer.nullLayer) {
+    return LayerTypes.NullObject;
+  }
+
+  var i;
+  for (i = 0; i < LayerConstructors.length; i++) {
+    if (layer instanceof LayerConstructors[i]) {
+      result = LayerConstructors[i].name;
+      break;
+    }
+  }
+  if (result === 'AVLayer') {
+    result = resolveAVLayerType(layer);
+  } else if (result === 'CameraLayer') {
+    result = LayerTypes.Camera;
+  } else if (result === 'LightLayer') {
+    result = LayerTypes.Light;
+  } else if (result === 'ShapeLayer') {
+    result = LayerTypes.Shape;
+  } else if (result === 'TextLayer') {
+    result = LayerTypes.Text;
+  }
+  return result;
+}
+```
