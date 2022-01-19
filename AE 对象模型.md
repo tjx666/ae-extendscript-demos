@@ -300,31 +300,128 @@ Layer 是所有图层类型的基类，定义了很多基础属性：
 
   ![AE layer index](https://s2.loli.net/2022/01/16/2a35HSyMmZ9OLec.png)
 
-### startTime/inPoint/outPoint/time
+下图的合成帧率 30，时长 8s，先通过下图初步了解图层的几个时间相关的属性。虽然 AE 的界面上时间最小的时间单位是帧数，但是**在 AE jsx 中所有和时间有关的属性值单位都是秒**。
 
 ![startTime/inPoint/outPoint](https://s2.loli.net/2022/01/18/bWvSAN7IqE5xRYF.png)
 
-下图的合成帧率 30，时长 8s。
+#### startTime
+
+> startTime 表示一个图层的**时长**起点在合成上的时刻
 
 sourceItem 表示一个图层的 source 属性对应的 project item，向视频，图片，纯色图层等 AVLayer 都是有 source 的，每一个 source 都对应 project 面板中一个 item。而文字图层，形状图层等图层是没有 source 属性的，也就是说没有源素材，peoject 面板中是没有对应项的。
 
-#### startTime
+对于有 sourceItem 并且有时间维的图层而言，例如上面的视频图层，startTime 就是素材本身 0 时刻在时间轴上的时刻。
 
-对于有 sourceItem 并且有时间维度的图层而言，例如上面的视频图层，startTime 就是素材本身 0 时刻在时间轴上的时刻。
-
-对于有 sourceItem 但是没有时间维度的图层例如图片图层，以及没有 sourceItem 例如文字和形状图层，它们的初始 startTime 都是 0s。从 AE 的图层外观上来看好像 startTime 应该是和 inPoint 始终相等的，其实不是，真实情况是仿佛它们有一个虚拟的 duration，duration 为图层时长。
+对于有 sourceItem 但是没有时间维度的图层例如图片图层，以及没有 sourceItem 例如文字和形状图层，它们的初始 startTime 都是 0s。从 AE 的图层外观上来看好像 startTime 应该是和 inPoint 始终相等的，其实不是，真实情况是仿佛它们有一个虚拟的时长，这个时长的值为**合成**的时长。
 
 图片图层其实很好理解，你双击打开图片图层的 viewer 一目了然：
 
 ![image ](https://s2.loli.net/2022/01/18/Tj5toFXpSlfDEBL.png)
 
-观察 viewer 中的时间轴，总时长就是图层时长，startTime 的值其实就是以这个虚拟 duration 的起始点在合成时间轴上的时刻，很明显 startTime 不等于 inPoint，outPoint 也不等于 duration 结束时刻。之所以说是虚拟 duration，那是因为图片图层 source.duration 是 0。
+观察 viewer 中的时间轴，总时长就是**合成**时长，startTime 的值其实就是以这个虚拟时长的起始点在合成时间轴上的时刻。我们可以任意拖拽图层的渲染时间区间，所以很明显 startTime 不总等于 inPoint，outPoint 也不等于 duration 结束时刻。之所以说是虚拟时长，那是因为图片图层的实际时长也就是 `layer.source.duration` 的值是 0。
 
-文字图层和形状图层虽然没有图层 viewer，但是原理是和图片图层一样的，就不多解释了。
+文字图层和形状图层虽然没有图层 viewer，但是原理是和图片图层一样的，也可以当做有一个虚拟的**时长为合成时长**的**虚拟时长**来理解。就不多解释了。
+
+#### inPoint
+
+> inPoint 表示的一个图层的**实际渲染时间段**的起点在合成上的时刻
+
+实际开发过程中，有一个经常会碰到的问题就是如何图层的渲染区间对齐到 0 时刻，其实问题就是把图层 inPoint 到合成的 0 时刻。有人看到这里会说了，这还不简单直接赋值为 0 不就完事了。
+
+```javascript
+layer.inPoint = 0;
+```
+
+我最开始也是这么干的，但是这样做的问题可大了。
+
+![align inPoint](https://s2.loli.net/2022/01/20/17uGwHFbiUSOEIL.png)
+
+例如对于上述情况，视频图层 startTime 是 0s，inPoint 是 2s，outPoint 是 2s 29 帧处也就是 3s，使用下面代码来将 inPoint 代码对齐到 0 时刻：
+
+```javascript
+(function () {
+  /** @type {CompItem} */
+  var comp = app.project.activeItem;
+  var layers = comp.layers;
+  var layer = layers[1];
+
+  $.writeln('startTime: ' + layer.startTime);
+  $.writeln('inPoint: ' + layer.inPoint);
+  $.writeln('outPoint: ' + layer.outPoint);
+  $.writeln('inPoint 相对于 startTime 的时刻：' + (layer.inPoint - layer.startTime));
+
+  // 直接赋值
+  layer.inPoint = 0;
+
+  $.writeln('对齐 inPoint 到合成 0 时刻之后：');
+  $.writeln('startTime: ' + layer.startTime);
+  $.writeln('inPoint: ' + layer.inPoint);
+  $.writeln('outPoint: ' + layer.outPoint);
+  $.writeln('inPoint 相对于 startTime 的时刻：' + (layer.inPoint - layer.startTime));
+})();
+```
+
+输出结果：
+
+```
+startTime: 0
+inPoint: 2
+outPoint: 3
+inPoint 相对于 startTime 的时刻：2
+对齐 inPoint 到合成 0 时刻之后：
+startTime: 0
+inPoint: 0
+outPoint: 1
+inPoint 相对于 startTime 的时刻：0
+```
+
+可以看到 inPoint 还真被设置成 0 时刻了，但是你再看看 inPoint 相对于 startTime 的时刻（其实也是视频渲染第一帧的时刻），从 2s 变成 0s，这意味着你这个视频前后的渲染的视频内容变了。究其原因是因为：**在修改 inPoint 时，startTime 是不变的**。
+
+实际上，当你在对 inPoint 赋值时会发生什么呢？
+
+- startTime 永远保持不变
+- 将 inPoint 修改为你赋值的值
+- 调整 outPoint 使得图层渲染时间不变，也就是 (outPoint - inPoint) 不变
+
+上面是简单的情况，更复杂情况是当你 inPoint 修改的值小于等于 startTime，或者修改的值 + 渲染区间超出了 source.duration（也就是 outPoint 超出视频时长）。
+
+前者可以通过把修改赋值的 inPoint 为 -0.5 来测试，结果是 inPoint 会直接取 startTime 的值，outPoint 的值还是 -0.5 + 1 = 0.5s
+
+```
+startTime: 0
+inPoint: 2
+outPoint: 3
+inPoint 相对于 startTime 的时刻：2
+对齐 inPoint 到合成 0 时刻之后：
+startTime: 0
+inPoint: 0
+outPoint: 0.5
+inPoint 相对于 startTime 的时刻：0
+```
+
+后者可以通过修改赋值的 inPoint 为 7.5 来测试，结果就不多做探究，原本通过修改 inPoint 来对齐图层的 inPoint 到某个时刻就是错误的方式。
+
+```
+startTime: 0
+inPoint: 4
+outPoint: 5
+inPoint 相对于 startTime 的时刻：4
+对齐 inPoint 到合成 0 时刻之后：
+startTime: 0
+inPoint: 5.00500500500501
+outPoint: 5.00500500500501
+inPoint 相对于 startTime 的时刻：5.00500500500501
+```
+
+**对齐 inPoint 到某一时刻的正确做法是修改 startTime**。例如最常见的需求把 inPoint 对齐到 0 时刻：
+
+```javascript
+layer.startTime = -(layer.inPoint - layer.startTime);
+```
+
+这样就完了吗，对齐 inPoint 还有一个坑就是浮点数问题。
 
 ### AVLayer
-
-...
 
 ### Still Layer
 
