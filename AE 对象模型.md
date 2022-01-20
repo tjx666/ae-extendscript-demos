@@ -73,7 +73,7 @@ project 中的所有合成都会显示在 project 面板中作为一个素材项
 })();
 ```
 
-另一种方式就是通过 `app.project.items `遍历所有项，先筛选出合成项，再根据合成的 id 或者 name 过滤出你想要访问的合成。
+另一种方式就是通过 `app.project.items` 遍历所有项，先筛选出合成项，再根据合成的 id 或者 name 过滤出你想要访问的合成。
 
 ```javascript
 (function () {
@@ -308,7 +308,7 @@ Layer 是所有图层类型的基类，定义了很多基础属性：
 
 > startTime 表示一个图层的**时长**起点在合成上的时刻
 
-sourceItem 表示一个图层的 source 属性对应的 project item，向视频，图片，纯色图层等 AVLayer 都是有 source 的，每一个 source 都对应 project 面板中一个 item。而文字图层，形状图层等图层是没有 source 属性的，也就是说没有源素材，peoject 面板中是没有对应项的。
+sourceItem 表示一个图层的 source 属性对应的 project item，向视频，图片，纯色图层等 AVLayer 都是有 source 的，每一个 source 都对应 project 面板中一个 item。而文字图层，形状图层等图层是没有 source 属性的，也就是说没有源素材，project 面板中是没有对应项的。
 
 对于有 sourceItem 并且有时间维的图层而言，例如上面的视频图层，startTime 就是素材本身 0 时刻在时间轴上的时刻。
 
@@ -363,7 +363,7 @@ layer.inPoint = 0;
 
 输出结果：
 
-```
+```text
 startTime: 0
 inPoint: 2
 outPoint: 3
@@ -387,7 +387,7 @@ inPoint 相对于 startTime 的时刻：0
 
 前者可以通过把修改赋值的 inPoint 为 -0.5 来测试，结果是 inPoint 会直接取 startTime 的值，outPoint 的值还是 -0.5 + 1 = 0.5s
 
-```
+```text
 startTime: 0
 inPoint: 2
 outPoint: 3
@@ -401,7 +401,7 @@ inPoint 相对于 startTime 的时刻：0
 
 后者可以通过修改赋值的 inPoint 为 7.5 来测试，结果就不多做探究，原本通过修改 inPoint 来对齐图层的 inPoint 到某个时刻就是错误的方式。
 
-```
+```text
 startTime: 0
 inPoint: 4
 outPoint: 5
