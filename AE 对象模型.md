@@ -1,31 +1,39 @@
-本教程适合有 ExtendScript 基础的同学阅读，ExtendScript 本身是所有 adobe 系产品**通用**的用于执行自动化的**脚本语言**，只不过不同**宿主环境**被 patch 的 **API** 不一样。
+ExtendScript 本身是所有 adobe 系产品**通用**的用于执行自动化的**脚本语言**，只不过在不同**宿主环境**被 patch 的 **API** 不一样，相同的宿主环境不同的版本 API 也不一样。你可以简单的理解为 AE ExtendScript 是 ExtendScript 的扩展。
 
-例如 AE 中，在基础的 ExtendScript 环境下增加了 **CompItem**, **Layer** 等构造器用于表示 AE 中的合成和图层。
+例如 AE 中，在基础的 ExtendScript 环境下增加了 **CompItem**, **Layer** 等构造器用于表示 AE 中的合成和图层，这俩都是 AE 这个宿主环境特有的 API。
 
-注：由于 ExtendScript 后缀名就是 jsx，因此在讨论 adobe 脚本开发时提到 jsx 都是指 ExtendScript，而不是 react 用的那个 jsx dsl。
+由于 ExtendScript 后缀名就是 `.jsx`，因此在讨论 adobe 脚本开发时提到 jsx 一般都是指 [ExtendScript](https://extendscript.docsforadobe.dev/)，而不是 react 用的那个 [jsx](https://reactjs.org/docs/introducing-jsx.html) 。
 
-和网页中 DOM(Document Object Model) 一样，AE ExtendScript 中也用了一堆构造器和对象用来抽象 AE 的模型。
+## 概览
 
-![img](https://ae-scripting.docsforadobe.dev/_images/application.png)
+和网页中 DOM(Document Object Model) 一样，AE ExtendScript 中也用了一堆构造器和对象用来抽象 AE 的模型，也提供了一堆用于操作 AE 对象模型的 API。
 
-仔细观察上面图中各个面板的标题，AE 的对象模型可以拆解成下面的流程图，现在知道为什么作为开发应该安装英文版的 AE 了吧？
+下图是取自 [AE extendScript 文档](https://ae-scripting.docsforadobe.dev/introduction/objectmodel.html) 中的 AE 对象模型的结构图：
+
+![The After Effects Object Model](https://ae-scripting.docsforadobe.dev/_images/objectmodel.png)
+
+其中像 File, Folder, Socket 对象都在 ExtendScript 中就定义了。ExtendScript 中的 ScriptUI 模块，窗口和窗口控制对象在 AE 的 ExtendScript engine 中也是可以访问的，具体可以查看 [Extendscript](https://extendscript.docsforadobe.dev/) 的文档。
+
+上面的对象关系图和下面的 AE 用户界面其实是一一对应的。
+
+![user interface](https://ae-scripting.docsforadobe.dev/_images/application.png)
+
+由于平时开发 AE 脚本时，文档，变量等都是英文的，为了直观和 AE 界面对应起来，强烈建议安装 AE 时界面语言选择 **English(International)**。
+
+下面的思维导图更细致的描述了 AE 对象模型中各个对象的关系，其中背景颜色相同的节点表示都是彼此是有直接联系的，例如紫色的两个节点表示那个图层 `videoLayer1` 使用的视频素材就是 `item3-video2`。
 
 ![AE model](https://s2.loli.net/2022/01/16/A1ocHp7tg5YGwfm.png)
 
-说明：
-
-上面背景颜色相同的节点表示都是彼此是有直接联系的，例如紫色的两个节点表示那个图层 `videoLayer1` 使用的视频素材就是 `item3-video2`。
-
 ## app
 
-AE jsx 全局环境注入的变量 app 表示的就是 AE 宿主对象，这一点其它 adobe 产品应该也是一样，例如 photoshop 应该也是用全局变量 app 表示。当然也可以用全局对象 `$.global` 来访问，也就是 `$.global.app`。
+AE jsx 全局环境注入的变量 app 表示的就是 AE 宿主对象，这一点其它 adobe 产品应该也是一样，例如 photoshop 应该也是用全局变量 app 表示。
 
 app 挂载了很多实用的 API，说几个用的比较多的 API：
 
 - app.scheduleTask 它可是我们在 AE jsx 中实现异步编程的重要手段
 
 - app.preferences 读写 AE 的用户设置
-- app.beginUndoGroup/app.endUndoGroup 处理回退的，如果不做额外处理，如果脚本中对 AE 的进行多个操作，那么 <kbd>⌘</kbd>+<kbd>Z</kbd> 回退到上一个操作，用这个处理后可以回退到脚本开始
+- app.beginUndoGroup/app.endUndoGroup 处理回退的，如果不做额外处理，在脚本中对 AE 的进行多个操作，那么 <kbd>⌘</kbd>+<kbd>Z</kbd> 回退到上一个操作，用这个处理后可以回退到脚本开始
 
 ## project
 
@@ -37,11 +45,38 @@ app.project 返回的就是你当前打开的工程，**AE 不支持同时打开
 
 ![AE project panel](https://s2.loli.net/2022/01/16/gZV9EdXYBmPNnSh.png)
 
-其实 app.project 是和 AE 的 project 面板对应的，`app.project.items` 返回的就是 project 面板中的所有项，基类都是 `Item` 。
+其实 app.project 是和 AE 的 project 面板对应的，`app.project.items` 返回的就是 project 面板中的所有项，对应的基类为 Item。
 
-在 AE 的术语里有一个单词 `Footage`，表示素材的意思。project 面板中的每一项就是一个素材，这个素材可以是一个具体的素材例如图片，视频，序列帧，也可以是一个合成，还可以是一个文件夹（Folder Footage）。
+在 AE 的术语里有一个单词 `Footage`，表示素材的意思。project 面板中的每一项可以是一个具体的素材项(FootageItem)，例如图片，视频，序列帧，也可以是一个合成(CompItem)，还可以是一个文件夹(FolderItem)。
 
-需要注意的是 items 不是一个树结构，而是树被拍平后的数组，上面中 app.project.numItems 是 15，13 个具体素材 + 2 文件夹。只不过你可以通过 `folderItem.items` 再访问子 item。
+需要注意的是 items 不是一个树结构，而是树被拍平后的数组，上图中 `app.project.numItems` 是 15，13 个具体素材 + 2 文件夹。只不过你可以通过 `folderItem.items` 再访问子 item。
+
+例如我们要实现删除所有 item 名称和给定正则匹配的 item：
+
+```javascript
+/**
+ * 删除和给定正则匹配的 item
+ * @param {RegExp} pattern
+ */
+function removeItems(pattern) {
+  if (!(pattern instanceof RegExp)) throw new TypeError(pattern + ' is not Regexp');
+  var items = app.project.items;
+  for (var i = 1, item, prefix, parentFolder; i <= items.length; i++) {
+    item = items[i];
+    if (pattern.test(item.name)) {
+      parentFolder = item.parentFolder;
+      // 如果被匹配到的 item 所在文件夹只有它一个文件，直接删除父文件夹即可，避免出现空文件夹
+      if (parentFolder.name !== 'Root' && parentFolder.items.length === 1) {
+        parentFolder.remove();
+      } else {
+        item.remove();
+      }
+      // NOTE: 因为在循环中删除了元素，注意调整下标
+      i--;
+    }
+  }
+}
+```
 
 ## viewers
 
